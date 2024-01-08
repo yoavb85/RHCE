@@ -1,0 +1,56 @@
+
+
+echo 192.168.200.151   MyNode1.local MyNode1 >> /etc/hosts
+echo 192.168.200.152   MyNode2.local MyNode2 >> /etc/hosts
+ssh-keygen -t rsa
+ssh MyNode2
+echo 192.168.200.151   MyNode1.local MyNode1 >> /etc/hosts
+echo 192.168.200.152   MyNode2.local MyNode2 >> /etc/hosts
+ssh-keygen -t rsa
+cat /root/.ssh/id_rsa.pub | ssh MyNode1 'cat >> /root/.ssh/authorized_keys'
+ssh MyNode1
+cat /root/.ssh/id_rsa.pub | ssh MyNode2 'cat >> /root/.ssh/authorized_keys'
+
+yum install tmux
+tmux
+ctrl+b  "		create new cli
+ctrl+b  o		move betwen the win
+ctrl+b  :setw synchronize-panes		sync all the win same command
+ctrl+b  :setw synchronize-panes off	disable
+ctrl+b  x		close cli
+
+subscription-manager repos --enable=rhel-9-for-x86_64-highavailability-rpms
+yum install pcs pacemaker fence-agents-all -y	/	yum install pcs pcp-zeroconf fence-agents-all -y
+firewall-cmd --add-service=high-availability
+firewall-cmd --add-service=high-availability --permanent
+passwd hacluster
+systemctl start pcsd
+systemctl enable pcsd
+
+pcs host auth MyNode1 MyNode2
+pcs cluster setup cluster1 --start MyNode1 MyNode2
+pcs cluster enable --all
+pcs cluster status
+pcs status
+pcs property set stonith-enabled=false
+
+
+
+#pcs node standby/unstandby node1
+#pcs resource status
+#pcs resource config "httpd_vip"	-->		show resource detail
+#pcs resource enable/disable <resource_name>	-->		like start/stop
+#pcs resource restart <resource_name>
+#pcs resource move <resource_group> <destination_node_name>
+#pcs property set maintenance-mode=true/false
+#pcs cluster start/stop/ node1/--all
+#pcs cluster destroy <cluster_name>
+
+#pcs resource create httpd_fs Filesystem device="/dev/mapper/vg_apache-lv_apache" directory="/var/www" fstype="ext4" --group apache
+#pcs resource create http_vip IPaddr2 ip=192.168.200.150 cidr_netmask=24 --group apache
+#pcs resource create httpd_ser apache configfile="/etc/httpd/conf/httpd.conf" statusurl="http://127.0.0.1/server-status" --group apache
+
+https://www.youtube.com/watch?v=ayPLYjGZ19Y&t=873s&ab_channel=NehraClasses
+https://www.itzgeek.com/post/how-to-setup-high-availability-cluster-on-centos-8-rhel-8/
+
+/usr/sbin/httpd -f /etc/httpd/conf/httpd.conf -c "PidFile /var/run/httpd.pid" -k graceful > /dev/null 2>/dev/null || true
